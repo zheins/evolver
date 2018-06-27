@@ -125,7 +125,8 @@ class ReadingGenerator:
         
 
         return self.temp;
-        
+    
+    
     def getStepSizeUpperLimit():
         
         stepSizeUpperLimit = ((self.CONST_MAXOD - self.CONST_MINOD)/(self.CONST_ENDING_READING_NUM - self.CONST_STARTING_READING_NUM));
@@ -135,8 +136,30 @@ class ReadingGenerator:
         
         else:
            return stepSizeUpperLimit;
-        
-    
-    
 
+
+    def generateRandomOD(self):
+
+        newOD = 0.0;
+
+        if self.reachedPick:
+            self.OD = self.OD - self.CONST_DROP_VALUE;
+            self.reachedPick = False;
+        
+        upperLimit = self.getStepSizeUpperLimit();
+
+        if random.random() < self.CONST_LOCALLY_DECREASING_PROBABILITY:
+            newOD = self.OD - (self.generateRandomStepSize(upperLimit) * self.CONST_DECREASING_STEP_COEFFICIENT);
+        
+        else:
+            newOD = self.OD + self.generateRandomStepSize(upperLimit);
+        
+
+        if newOD > self.CONST_PICK_VALUE:
+            self.reachedPick = True;
+        
+        self.OD = newOD;
+        return self.OD
+    
+        
 
