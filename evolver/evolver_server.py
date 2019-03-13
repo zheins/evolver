@@ -12,7 +12,7 @@ SERIAL = serial.Serial(port="/dev/ttyAMA0", baudrate = 9600, timeout = 5)
 SERIAL.flushInput()
 SERIAL.close()
 
-PARAM = {"od":["we", "turb", "all"], "temp":["xr", "temp","all"], "stir": ["zv", "stir", "all"], "pump": ["st", "pump", "all"]}
+PARAM = {"od":["we", "turb", "all"], "temp":["xr", "temp","all"], "stir": ["zv", "stir", "all"], "pump": ["st", "pump", "all"], "lxml":["px","lxml","all"]}
 
 DEVICE_CONFIG = 'evolver-config.json'
 CAL_CONFIG = 'calibration.json'
