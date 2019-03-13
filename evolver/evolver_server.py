@@ -262,6 +262,8 @@ def run_commands(config = None):
             SERIAL.close()
         command_queue.insert(0, config)
     data = {}
+    print('Command Queue:')
+    print(command_queue)
     while len(command_queue) > 0:
         command_queue = remove_duplicate_commands(command_queue)
         try:
@@ -338,6 +340,9 @@ def config_to_arduino(key, key_list, header, ending, method):
     SERIAL.open()
     SERIAL.flushInput()
     output = ''
+    print('Attempting to send command:')
+    print(key)
+    print(key_list)
     if method == 'all' and key_list is not None:
         output = header + ','.join(map(str,key_list)) + ', ' + ending
         print('Output to arduino:')
@@ -360,9 +365,10 @@ def data_from_arduino(key, header, ending):
             data_list = [int(s) for s in received[4:-4].split(',')]
         else:
             print('Data from arduino misconfigured')
-        SERIAL.close()
     except (TypeError, ValueError, serial.serialutil.SerialException) as e:
         print('Serial Exception!')
+    finally:
+        SERIAL.close()
     return data_list
 
 def ping_arduino(config):
@@ -377,10 +383,15 @@ def ping_arduino(config):
 def push_arduino(config):
     global PARAM, ENDING_SEND, SERIAL
     if not SERIAL.isOpen():
-        for key, value in config.items():
-            if key is not 'push':
-                config_to_arduino(key, value, PARAM[key][0], ENDING_SEND, PARAM[key][2])
-                SERIAL.close()
+        try:
+            for key, value in config.items():
+                if key is not 'push':
+                    config_to_arduino(key, value, PARAM[key][0], ENDING_SEND, PARAM[key][2])
+                    SERIAL.close()
+        except (TypeError, ValueError, serial.serialutil.SerialException) as e:
+            print('Serial Exception!')
+        finally:
+            SERIAL.close()
 
 def define_parameters(param_json):
     global PARAM
