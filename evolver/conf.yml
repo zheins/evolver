@@ -6,16 +6,21 @@ experimental_params:
     fields_expected_outgoing: 2
     fields_expected_incoming: 17
     value: '1000'
+    pre_command:
+      od_led:
+        fields_expected_outgoing: 17
+        fields_expected_incoming: 17
+        value: ['4095','4095','4095','4095','4095','4095','4095','4095','4095','4095','4095','4095','4095','4095','4095','4095']
   od_135:
     recurring: true
     fields_expected_outgoing: 2
     fields_expected_incoming: 17
     value: '1000'
-  od_led:
-    recurring: true
-    fields_expected_outgoing: 17
-    fields_expected_incoming: 17
-    value: ['2500','2500','2500','2500','2500','2500','2500','2500','2500','2500','2500','2500','2500','2500','2500','2500']
+    pre_command:
+      od_led:
+        fields_expected_outgoing: 17
+        fields_expected_incoming: 17
+        value: ['2500','2500','2500','2500','2500','2500','2500','2500','2500','2500','2500','2500','2500','2500','2500','2500']
   temp:
     recurring: true
     fields_expected_outgoing: 17

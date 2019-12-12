@@ -40,6 +40,7 @@ async def on_command(sid, data):
     recurring = data.get('recurring', None)
     fields_expected_outgoing = data.get('fields_expected_outgoing', None)
     fields_expected_incoming = data.get('fields_expected_incoming', None)
+    pre_command = data.get('pre_command', None)
 
     # Update the configuration for the param
     if value is not None:
@@ -55,7 +56,8 @@ async def on_command(sid, data):
         evolver_conf['experimental_params'][param]['fields_expected_outgoing'] = fields_expected_outgoing
     if fields_expected_incoming is not None:
         evolver_conf['experimental_params'][param]['fields_expected_incoming'] = fields_expected_incoming
-
+    if pre_command is not None:
+        evolver_conf['experimental_params'][param]['pre_command'] = pre_command
 
     # Save to config the values sent in for the parameter
     with open(os.path.realpath(os.path.join(os.getcwd(),os.path.dirname(__file__), evolver.CONF_FILENAME)), 'w') as ymlfile:
@@ -233,13 +235,37 @@ def clear_broadcast(param=None):
             command_queue.pop(i)
             break
 
+def process_experimental_param(param):
+    fields_expected_outgoing = param['fields_expected_outgoing']
+    fields_expected_incoming = param['fields_expected_incoming']
+    output = []
+    if type(value) is list:
+       output = output + list(map(str,value))
+       for i,command_value in enumerate(output):
+            if command_value == 'NaN':
+                output[i] = evolver_conf['experimental_params'][param]['value'][i]
+    else:
+        output.append(value)
+
+    return fields_expected_outgoing, fields_expected_incoming, output
+
+def run_pre_commands(param):
+    for param_name, param_values in param.items()
+        pre_command = param.get('pre_command', None)
+        if pre_command is not None:
+            run_pre_commands(pre_command)
+        fields_expected_outgoing, fields_expected_incoming, output = process_experimental_param(param_values)
+        serial_communication(param_name, IMMEDIATE, fields_expected_outgoing, fields_expected_incoming, output)
+
 def run_commands():
     global command_queue, serial_connection
     data = {}
     while len(command_queue) > 0:
         command = command_queue.pop(0)
         try:
-            returned_data = serial_communication(command['param'], command['value'], command['type'])
+            param = evolver_conf['experimental_params'][command['param']]
+            run_pre_commands(param)
+            returned_data = serial_communication(command['param'], command['type'], fields_expected_outgoing, fields_expected_incoming, output)
             if returned_data is not None:
                 data[command['param']] = returned_data
         except (TypeError, ValueError, serial.serialutil.SerialException, EvolverSerialError) as e:
@@ -247,10 +273,9 @@ def run_commands():
             await sio.emit('serialexception', command, namespace = '/dpu-evolver')
     return data
 
-def serial_communication(param, value, comm_type):
+def serial_communication(param, comm_type, fields_expected_outgoing, fields_expected_incoming, output):
     serial_connection.reset_input_buffer()
     serial_connection.reset_output_buffer()
-    output = []
 
     # Check that parameters being sent to arduino match expected values
     if comm_type == RECURRING:
@@ -258,17 +283,6 @@ def serial_communication(param, value, comm_type):
     if comm_type == IMMEDIATE:
         output.append(evolver_conf[IMMEDIATE])
 
-    if type(value) is list:
-       output = output + list(map(str,value))
-       for i,command_value in enumerate(output):
-            if command_value == 'NaN':
-                output[i] = evolver_conf['experimental_params'][param]['value'][i]
-
-    else:
-        output.append(value)
-
-    fields_expected_outgoing = evolver_conf['experimental_params'][param]['fields_expected_outgoing']
-    fields_expected_incoming = evolver_conf['experimental_params'][param]['fields_expected_incoming']
     if len(output) is not fields_expected_outgoing:
         raise EvolverSerialError('Error: Number of fields outgoing for ' + param + ' different from expected\n\tExpected: ' + str(fields_expected_outgoing) + '\n\tFound: ' + str(len(output)))
 
@@ -294,7 +308,7 @@ def serial_communication(param, value, comm_type):
         raise EvolverSerialError('Error: Number of fields recieved for ' + param + ' different from expected\n\tExpected: ' + str(fields_expected_incoming) + '\n\tFound: ' + str(len(returned_data)))
 
     if returned_data[0] == evolver_conf['echo_response_char'] and output[1:] != returned_data[1:]:
-        raise EvolverSerialError('Error: Value returned by echo different from values sent.\n\tExpected:' + str(output[1:]) + '\n\tFound: ' + str(value))
+        raise EvolverSerialError('Error: Value returned by echo different from values sent.\n\tExpected:' + str(output[1:]) + '\n\tFound: ' + str(returned_data[1:]))
     elif returned_data[0] != evolver_conf['data_response_char'] and returned_data[0] != evolver_conf['echo_response_char']:
         raise EvolverSerialError('Error: Incorect response character.\n\tExpected: ' + evolver_conf['data_response_char'] + '\n\tFound: ' + returned_data[0])
 
